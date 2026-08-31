@@ -632,6 +632,24 @@
     vertical-align: middle;
     margin-left: 6px;
   }
+
+  footer {
+    text-align: center;
+    margin-top: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  footer a {
+    color: var(--muted);
+    text-decoration: none;
+    margin: 0 10px;
+    transition: color 0.2s;
+  }
+
+  footer a:hover {
+    color: var(--accent);
+  }
 </style>
 </head>
 <body>
@@ -751,11 +769,16 @@
           🖼️ Скачать PNG
         </button>
         <button class="download-btn zip" onclick="downloadAsZip()">
-          📦 Скачать ZIP-архив
+          📦 Скачать ZIP-архив (.ico)
         </button>
       </div>
     </div>
   </div>
+
+  <footer>
+    <a href="impressum.html">Impressum</a>
+    <a href="datenschutz.html">Datenschutzerklärung</a>
+  </footer>
 
 </div>
 
@@ -1040,7 +1063,6 @@ function buildIco(pngEntries) {
   return new Uint8Array(buf);
 }
 
-// Вспомогательное скачивание любых бинарных данных
 function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -1052,7 +1074,15 @@ function triggerDownload(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ─── Обработчики кнопок скачивания ──────────────────────────────────────────
+function updatePageFavicon(canvas32, icoBlob) {
+  const pngUrl = canvas32.toDataURL('image/png');
+  document.getElementById('dynamicFaviconPng').href = pngUrl;
+  
+  if (icoBlob) {
+    const icoUrl = URL.createObjectURL(icoBlob);
+    document.getElementById('dynamicFaviconIco').href = icoUrl;
+  }
+}
 
 async function downloadAsIco() {
   if (!currentImage) return;
@@ -1096,11 +1126,15 @@ async function downloadAsZip() {
     const canvas = processImageToCanvas(currentImage, s);
     const pngBytes = await canvasToPngBytes(canvas);
     pngEntries.push({ size: s, data: pngBytes });
-    zip.file(`favicon-${s}x${s}.png`, pngBytes);
+
+    // Упаковываем каждый размер как отдельный .ico файл
+    const singleIcoBytes = buildIco([{ size: s, data: pngBytes }]);
+    zip.file(`favicon-${s}x${s}.ico`, singleIcoBytes);
   }
 
-  const icoBytes = buildIco(pngEntries);
-  zip.file('favicon.ico', icoBytes);
+  // Также сохраняем единый мультиразмерный favicon.ico
+  const multiIcoBytes = buildIco(pngEntries);
+  zip.file('favicon.ico', multiIcoBytes);
 
   const zipContent = await zip.generateAsync({ type: 'blob' });
   triggerDownload(zipContent, 'favicons_pack.zip');
@@ -1122,6 +1156,7 @@ async function startConvert() {
 
   const pngEntries = [];
   const previewCanvases = [];
+  let icon32Canvas = null;
 
   for (let i=0; i<sizes.length; i++) {
     const s = sizes[i];
@@ -1132,6 +1167,9 @@ async function startConvert() {
     await new Promise(r => setTimeout(r, 30));
 
     const canvas = processImageToCanvas(currentImage, s);
+    if (s === 32 || (!icon32Canvas && i === 0)) {
+      icon32Canvas = canvas;
+    }
     const pngBytes = await canvasToPngBytes(canvas);
     pngEntries.push({ size: s, data: pngBytes });
     previewCanvases.push({ size: s, canvas });
@@ -1168,6 +1206,12 @@ async function startConvert() {
   });
 
   const icoBytes = buildIco(pngEntries);
+  const icoBlob = new Blob([icoBytes], { type: 'image/x-icon' });
+  
+  if (icon32Canvas) {
+    updatePageFavicon(icon32Canvas, icoBlob);
+  }
+
   const totalKb = (icoBytes.length / 1024).toFixed(1);
   document.getElementById('resultMeta').textContent = `${sizes.length} размеров • ${sizes.join(', ')} px • ${totalKb} KB`;
 
