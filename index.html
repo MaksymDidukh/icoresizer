@@ -13,7 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
-    --bg: #0a0a0f;
+    --bg: #fff;
     --surface: #111118;
     --surface2: #18181f;
     --border: #2a2a3a;
@@ -29,7 +29,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--bg);
+    background:  #fff;
     color: var(--text);
     font-family: 'Syne', sans-serif;
     min-height: 100vh;
@@ -167,7 +167,7 @@
   }
 
   .format-tag {
-    background: var(--surface2);
+    background: #fff;
     border: 1px solid var(--border);
     padding: 4px 10px;
     border-radius: 6px;
@@ -1220,6 +1220,136 @@ async function startConvert() {
     document.getElementById('resultsSection').classList.add('visible');
     btn.disabled = false;
   }, 400);
+}
+
+
+
+function initThemeSelector() {
+  // 1. Создание и внедрение стилей (абсолютно все элементы становятся светлыми)
+  const style = document.createElement('style');
+  style.textContent = `
+    :root {
+      /* Классическая светлая тема (по умолчанию) */
+      --bg-color: #ffffff;
+      --card-bg: #f8fafc;
+      --inner-bg: #f1f5f9;
+      --text-color: #0f172a;
+      --border-color: #e2e8f0;
+      --input-bg: #ffffff;
+    }
+
+    [data-theme="warm-light"] {
+      /* Тёплая светлая тема (кремовая) */
+      --bg-color: #fdfbf7;
+      --card-bg: #f5f5f4;
+      --inner-bg: #e7e5e4;
+      --text-color: #1c1917;
+      --border-color: #d6d3d1;
+      --input-bg: #ffffff;
+    }
+
+    [data-theme="blue-light"] {
+      /* Пастельно-голубая светлая тема */
+      --bg-color: #f0f9ff;
+      --card-bg: #e0f2fe;
+      --inner-bg: #bae6fd;
+      --text-color: #0c4a6e;
+      --border-color: #7dd3fc;
+      --input-bg: #ffffff;
+    }
+
+    /* Принудительно задаём светлый фон и тёмный текст для ВСЕХ элементов сайта */
+    html, body {
+      background-color: var(--bg-color) !important;
+      color: var(--text-color) !important;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Принудительный светлый фон для всех внутренних контейнеров, блоков и списков */
+    div, section, article, header, footer, main, aside, nav, 
+    form, fieldset, details, summary, table, tr, td, th, 
+    ul, ol, li, blockquote, .card, .container, .box, .wrapper, .block {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Вложенные внутренние блоки сделаем слегка отличающегося светлого оттенка для контраста */
+    div div, section div, article div, li div, td div {
+      background-color: var(--inner-bg) !important;
+    }
+
+    /* Текстовые элементы */
+    p, span, h1, h2, h3, h4, h5, h6, a, label, li, td, th, strong, b, em, i {
+      color: var(--text-color) !important;
+    }
+
+    /* Поля ввода, селекты и кнопки в светлой гамме */
+    input, select, textarea, button {
+      background-color: var(--input-bg) !important;
+      color: var(--text-color) !important;
+      border: 1px solid var(--border-color) !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // 2. Создание футера с переключателем
+  const footer = document.createElement('footer');
+  footer.id = 'theme-footer-selector';
+  footer.style.cssText = `
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 20px !important;
+    margin-top: 40px !important;
+    border-top: 1px solid var(--border-color) !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
+  `;
+
+  footer.innerHTML = `
+    <label for="theme-select" style="font-weight: 600; font-size: 14px;">
+      Вариант светлой темы:
+    </label>
+    <select id="theme-select" style="
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+    ">
+      <option value="light">☀️ Классическая светлая</option>
+      <option value="warm-light">📄 Тёплая (кремовая)</option>
+      <option value="blue-light">🌊 Светло-голубая</option>
+    </select>
+  `;
+
+  document.body.appendChild(footer);
+
+  // 3. Логика переключения темы
+  const select = document.getElementById('theme-select');
+
+  function applyTheme(themeName) {
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem('user-selected-theme', themeName);
+    if (select) select.value = themeName;
+  }
+
+  select.addEventListener('change', (e) => {
+    applyTheme(e.target.value);
+  });
+
+  // Автостарт со стандартной светлой темы
+  const savedTheme = localStorage.getItem('user-selected-theme') || 'light';
+  applyTheme(savedTheme);
+}
+
+// Запуск
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initThemeSelector);
+} else {
+  initThemeSelector();
 }
 </script>
   <script src="https://dmamax.vercel.app/legal-module.js"></script>
